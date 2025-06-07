@@ -43,7 +43,7 @@ function GuiLib:CreateToggle(params)
         local pos = toggled and UDim2.new(0.5, -2, 0, 2) or UDim2.new(0, 2, 0, 2)
         local color = toggled and Color3.fromRGB(98, 0, 234) or Color3.fromRGB(200, 50, 50)
         TweenService:Create(Indicator, TweenInfo.new(0.2), {Position = pos, BackgroundColor3 = color}):Play()
-        if params.Callback then params.Callback(toggled) end
+        if params.Callback then task.spawn(params.Callback, toggled) end
     end
     Button.MouseButton1Click:Connect(function() toggled = not toggled; updateState() end)
     updateState()
@@ -81,13 +81,14 @@ function GuiLib:CreateKeybind(params)
             if gpe then return end
             currentBind = input.KeyCode
             Button.Text = tostring(currentBind.Name)
-            if params.Callback then params.Callback(currentBind) end
+            if params.Callback then task.spawn(params.Callback, currentBind) end
             connection:Disconnect()
         end)
     end)
 end
 
 local MainGui = Instance.new("ScreenGui", gethui())
+MainGui.Name = "NovaFramework"
 MainGui.DisplayOrder = 999
 MainGui.ZIndexBehavior = Enum.ZIndexBehavior.Global
 MainGui.IgnoreGuiInset = true
@@ -192,6 +193,7 @@ local function switchTab(tabName)
     if activeTab == tabName then return end
     for name, button in pairs(tabs) do
         local contentFrame = contentFrames[name]
+        if not contentFrame then continue end
         local isTarget = (name == tabName)
         if isTarget then
             TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = activeColor}):Play()
@@ -228,7 +230,6 @@ local function createTab(name, order)
     ContentFrame.Parent = ContentContainer
     contentFrames[name] = ContentFrame
     TabButton.MouseButton1Click:Connect(function() switchTab(name) end)
-    return ContentFrame
 end
 
 local function createCategoryBox(parent, title)
@@ -259,25 +260,25 @@ local function createCategoryBox(parent, title)
     return OptionsContainer
 end
 
-local aimbotTab = createTab("Aimbot", 1)
-local espTab = createTab("ESP", 2)
-local miscTab = createTab("Misc", 3)
-local configTab = createTab("Config", 4)
+createTab("Aimbot", 1)
+createTab("ESP", 2)
+createTab("Misc", 3)
+createTab("Config", 4)
 
-local aimbotLayout = Instance.new("UIGridLayout", aimbotTab)
+local aimbotLayout = Instance.new("UIGridLayout", contentFrames["Aimbot"])
 aimbotLayout.CellPadding = UDim2.new(0, 10, 0, 10)
 aimbotLayout.CellSize = UDim2.new(0, 260, 1, -10)
 aimbotLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-local aimbotGeneral = createCategoryBox(aimbotTab, "General")
-local aimbotTrigger = createCategoryBox(aimbotTab, "Trigger")
+local aimbotGeneral = createCategoryBox(contentFrames["Aimbot"], "General")
+local aimbotTrigger = createCategoryBox(contentFrames["Aimbot"], "Trigger")
 GuiLib:CreateToggle({Parent = aimbotGeneral, Text = "Enable Aimbot"})
 GuiLib:CreateToggle({Parent = aimbotGeneral, Text = "Team Check"})
 GuiLib:CreateToggle({Parent = aimbotTrigger, Text = "Enable Triggerbot"})
 
-local miscLayout = Instance.new("UIListLayout", miscTab)
+local miscLayout = Instance.new("UIListLayout", contentFrames["Misc"])
 miscLayout.Padding = UDim2.new(0, 10)
 miscLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-local miscSettings = createCategoryBox(miscLayout, "Settings")
+local miscSettings = createCategoryBox(contentFrames["Misc"], "Settings")
 miscSettings.Size = UDim2.new(1, -10, 0, 60)
 GuiLib:CreateKeybind({Parent = miscSettings, Text = "Toggle Bind", Default = GuiLib.ToggleBind, Callback = function(key) GuiLib.ToggleBind = key end})
 
@@ -285,13 +286,13 @@ UserInputService.InputBegan:Connect(function(input, gpe)
     if gpe then return end
     if input.KeyCode == GuiLib.ToggleBind then
         GuiLib.Visible = not GuiLib.Visible
-        local scale = GuiLib.Visible and Vector3.new(1,1,1) or Vector3.new(0,0,0)
+        local scale = GuiLib.Visible and 1 or 0
         local transparency = GuiLib.Visible and 0 or 1
-        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.fromScale(scale.X * 750, scale.Y * 400), GroupTransparency = transparency}):Play()
+        TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.fromScale(750 * scale, 400 * scale), GroupTransparency = transparency}):Play()
     end
 end)
 
-MainFrame.Size = UDim2.new()
+MainFrame.Size = UDim2.fromScale(0,0)
 MainFrame.GroupTransparency = 1
 TweenService:Create(MainFrame, TweenInfo.new(0.4, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {Size = UDim2.new(0, 750, 0, 400), GroupTransparency = 0}):Play()
 switchTab("Aimbot")
